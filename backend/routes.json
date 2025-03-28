@@ -1,0 +1,6 @@
+{
+    "/api/register": "/users",
+    "/api/login": "/users",
+    "/api/mentees/profile": "/mentees"
+  }
+  

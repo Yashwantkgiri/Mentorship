@@ -1,0 +1,15 @@
+{
+    "users": [
+      {
+        "id": 1,
+        "firstName": "donvine",
+        "lastName": "mugendi",
+        "email": "donvinemugendi@gmail.com",
+        "password": "donvine2030",
+        "role": "mentee",
+        "agreedToTerms": true
+      }
+    ],
+    "mentees": []
+  }
+  
