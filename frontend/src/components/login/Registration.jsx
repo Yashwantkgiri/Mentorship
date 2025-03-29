@@ -2,7 +2,6 @@ import { useState, useContext } from "react";
 import { AppContext } from "../../context/Context";
 import "./login.css";
 import Swal from "sweetalert2";
-import { Checkbox } from "semantic-ui-react";
 import Axios from "axios";
 import { BsSoundwave } from "react-icons/bs";
 
@@ -128,7 +127,8 @@ function Registration({ handleRegister, showPassword, setShowPassword }) {
           </div>
 
           <div className="input-field">
-            <Checkbox
+            <input
+              type="checkbox"
               checked={showPassword}
               onChange={() => setShowPassword(!showPassword)}
             />{" "}
@@ -174,7 +174,8 @@ function Registration({ handleRegister, showPassword, setShowPassword }) {
         </form>
 
         <div className="ui bottom attached message" id="register-message">
-          Already signed up? <a onClick={handleRegister}>Login here</a> instead.
+          Already signed up?{" "}
+          <a onClick={handleRegister}>Login here</a> instead.
         </div>
       </div>
     </div>

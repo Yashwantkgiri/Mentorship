@@ -1,9 +1,10 @@
-const Mentor = require("../models/Mentor");
-const Mentee = require("../models/Mentee");
-const bcrypt = require("bcrypt");
+import Mentor from "../models/mentor.js";
+import Mentee from "../models/mentee.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-// REGISTER
-const registerUser = async (req, res) => {
+// REGISTER Controller
+export const register = async (req, res) => {
     try {
         const { fullName, email, password, role } = req.body;
 
@@ -13,59 +14,65 @@ const registerUser = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        let user;
+
         if (role === "mentor") {
-            const mentor = new Mentor({
-                fullName,
-                email,
-                password: hashedPassword,
-                role
-            });
-            await mentor.save();
-            return res.status(201).json({ message: "Mentor registered successfully" });
+            const existingMentor = await Mentor.findOne({ email });
+            if (existingMentor) return res.status(400).json({ message: "Mentor already exists" });
+
+            user = new Mentor({ fullName, email, password: hashedPassword });
+            await user.save();
+        } else if (role === "mentee") {
+            const existingMentee = await Mentee.findOne({ email });
+            if (existingMentee) return res.status(400).json({ message: "Mentee already exists" });
+
+            user = new Mentee({ fullName, email, password: hashedPassword });
+            await user.save();
         } else {
-            const mentee = new Mentee({
-                fullName,
-                email,
-                password: hashedPassword,
-                role
-            });
-            await mentee.save();
-            return res.status(201).json({ message: "Mentee registered successfully" });
+            return res.status(400).json({ message: "Invalid role" });
         }
 
+        res.status(201).json({ message: `${role} registered successfully` });
+
     } catch (error) {
-        console.error("Registration error:", error);
-        return res.status(500).json({ message: "Server error during registration" });
+        console.error(error);
+        res.status(500).json({ message: "Registration failed" });
     }
 };
 
-// LOGIN
-const loginUser = async (req, res) => {
+// LOGIN Controller
+export const login = async (req, res) => {
     try {
-        const { email, password, role } = req.body;
+        const { email, password } = req.body;
 
-        if (!email || !password || !role) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
-
-        const Model = role === "mentor" ? Mentor : Mentee;
-        const user = await Model.findOne({ email });
+        let user = await Mentor.findOne({ email });
+        let role = "mentor";
 
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            user = await Mentee.findOne({ email });
+            role = "mentee";
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: "Invalid credentials" });
-        }
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-        return res.status(200).json({ message: "Login successful", user });
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+        if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid email or password" });
+
+        const token = jwt.sign({ id: user._id, role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+        res.status(200).json({
+            message: "Login successful",
+            token,
+            user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+            },
+        });
 
     } catch (error) {
-        console.error("Login error:", error);
-        return res.status(500).json({ message: "Server error during login" });
+        console.error(error);
+        res.status(500).json({ message: "Login failed" });
     }
 };
-
-module.exports = { registerUser, loginUser };

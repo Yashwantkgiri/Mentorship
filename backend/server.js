@@ -1,10 +1,9 @@
-// server.js (complete working backend)
+// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 
 // Load env
 dotenv.config();
@@ -19,19 +18,32 @@ mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopol
     .then(() => console.log("MongoDB Connected"))
     .catch((err) => console.error(err));
 
-// User Schema
-const userSchema = new mongoose.Schema({
+// ============= SCHEMAS =============
+
+// Mentee Schema
+const menteeSchema = new mongoose.Schema({
     firstName: String,
     lastName: String,
     email: String,
     password: String,
-    role: String,
     agreedToTerms: Boolean,
-});
+}, { collection: "mentees" });
 
-const User = mongoose.model("User", userSchema);
+const Mentee = mongoose.model("Mentee", menteeSchema);
 
-// Register API
+// Mentor Schema
+const mentorSchema = new mongoose.Schema({
+    firstName: String,
+    lastName: String,
+    email: String,
+    password: String,
+    agreedToTerms: Boolean,
+}, { collection: "mentors" });
+
+const Mentor = mongoose.model("Mentor", mentorSchema);
+
+// ============= REGISTER API =============
+
 app.post("/api/register", async (req, res) => {
     const { firstName, lastName, email, password, role, agreedToTerms } = req.body;
 
@@ -40,21 +52,43 @@ app.post("/api/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ firstName, lastName, email, password: hashedPassword, role, agreedToTerms });
 
     try {
-        await user.save();
+        if (role === "mentee") {
+            const mentee = new Mentee({ firstName, lastName, email, password: hashedPassword, agreedToTerms });
+            await mentee.save();
+        } else if (role === "mentor") {
+            const mentor = new Mentor({ firstName, lastName, email, password: hashedPassword, agreedToTerms });
+            await mentor.save();
+        } else {
+            return res.status(400).json({ error: "Invalid role" });
+        }
+
         res.json({ message: "User registered successfully" });
+
     } catch (err) {
         res.status(500).json({ error: "Registration failed" });
     }
 });
 
-// Login API
-app.get("/api/login", async (req, res) => {
-    const { email, password } = req.query;
+// ============= LOGIN API =============
 
-    const user = await User.findOne({ email });
+app.get("/api/login", async (req, res) => {
+    const { email, password, role } = req.query;
+
+    if (!email || !password || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    let user;
+    if (role === "mentee") {
+        user = await Mentee.findOne({ email });
+    } else if (role === "mentor") {
+        user = await Mentor.findOne({ email });
+    } else {
+        return res.status(400).json({ error: "Invalid role" });
+    }
+
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const valid = await bcrypt.compare(password, user.password);
@@ -63,6 +97,7 @@ app.get("/api/login", async (req, res) => {
     res.json(user);
 });
 
-// Start server
+// ============= SERVER START =============
+
 const PORT = process.env.PORT || 8001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

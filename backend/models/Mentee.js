@@ -1,11 +1,10 @@
-const mongoose = require("mongoose");
-
+// Mentee Schema
 const menteeSchema = new mongoose.Schema({
-    fullName: String,
-    email: { type: String, unique: true },
+    firstName: String,
+    lastName: String,
+    email: String,
     password: String,
-    agreedToTerms: Boolean
-});
+    agreedToTerms: Boolean,
+}, { collection: "mentee" }); // 💥 fixed
 
 const Mentee = mongoose.model("Mentee", menteeSchema);
-module.exports = Mentee;

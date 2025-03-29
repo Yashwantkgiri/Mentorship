@@ -4,6 +4,7 @@ import "./login.css";
 import Swal from "sweetalert2";
 import Axios from "axios";
 import { BsSoundwave } from "react-icons/bs";
+import { useNavigate } from "react-router-dom";
 
 function Login({ handleRegister, showPassword, setShowPassword }) {
   const { setUserData } = useContext(AppContext);
@@ -13,6 +14,7 @@ function Login({ handleRegister, showPassword, setShowPassword }) {
   });
 
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -34,11 +36,26 @@ function Login({ handleRegister, showPassword, setShowPassword }) {
     })
       .then((response) => {
         setUserData(response.data);
+
         Swal.fire({
           icon: "success",
           title: "Login Successful",
           text: `Welcome back, ${response.data.firstName}`,
         });
+
+        // ✅ Passing user data while navigating
+        if (response.data.role === "mentor") {
+          navigate("/mentor-dashboard", { state: { user: response.data } });
+        } else if (response.data.role === "mentee") {
+          navigate("/mentee-dashboard", { state: { user: response.data } });
+        } else {
+          Swal.fire({
+            icon: "warning",
+            title: "Unknown Role",
+            text: "Please contact admin",
+          });
+        }
+
         setLoading(false);
       })
       .catch((error) => {
@@ -87,29 +104,30 @@ function Login({ handleRegister, showPassword, setShowPassword }) {
             />
           </div>
 
-          <div className="input-field">
+          <div className="input-field checkbox-field">
             <input
               type="checkbox"
               checked={showPassword}
               onChange={() => setShowPassword(!showPassword)}
             />{" "}
-            <span> {!showPassword ? "Show" : "Hide"} Password</span>
+            <span>{!showPassword ? "Show" : "Hide"} Password</span>
           </div>
 
           <button
             type="submit"
-            className={
-              !loading
-                ? "login-btn"
-                : "ui fluid loading primary button"
-            }
+            className={!loading ? "login-btn" : "ui fluid loading primary button"}
+            disabled={loading}
           >
-            <i className="sign-in icon"></i> Login
+            <i className="sign-in icon"></i> {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         <div className="ui bottom attached message" id="register-message">
-          New here? <a onClick={handleRegister}>Register here</a> instead.
+          New here?{" "}
+          <a onClick={handleRegister} style={{ cursor: "pointer" }}>
+            Register here
+          </a>{" "}
+          instead.
         </div>
       </div>
     </div>
